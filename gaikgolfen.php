@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 namespace KasH\GaIkGolfen;
 
+use CurlHandle;
 use DateTimeImmutable;
 use DOMDocument;
 use DOMElement;
@@ -127,7 +128,7 @@ use function trim;
     {
         try {
             $curl = curl_init($url);
-            if (! is_resource($curl)) {
+            if (! is_resource($curl) && ! $curl instanceof CurlHandle) {
                 throw new RuntimeException('Could not initialize curl');
             }
 

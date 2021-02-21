@@ -28,7 +28,7 @@ else
 fi
 
 interval="${2:-600}";
-course="${2:-64}";
+course="${3:-64}";
 cache=gig.cache;
 lastSat='';
 lastSun='';
