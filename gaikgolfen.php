@@ -68,8 +68,8 @@ use function trim;
     private const DEFAULT_DISPLAY        = self::DISPLAY_CSV;
     private const DEFAULT_COLUMNS        = 4;
 
-    private $columnTextCache = [];
-    private $config;
+    private array $columnTextCache = [];
+    private array $config;
 
     public function __construct($arguments)
     {
@@ -239,6 +239,7 @@ use function trim;
         return $data;
     }
 
+    /** @noinspection PhpArrayShapeAttributeCanBeAddedInspection */
     private function login(array $config, string $cache): array
     {
         $postFields = sprintf(self::POST_FIELDS_FORMAT, $config['login'], $config['passwd']);
