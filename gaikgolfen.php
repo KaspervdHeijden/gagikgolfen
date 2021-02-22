@@ -128,7 +128,7 @@ use function trim;
     {
         try {
             $curl = curl_init($url);
-            if (! is_resource($curl) && ! $curl instanceof CurlHandle) {
+            if (! $curl instanceof CurlHandle && ! is_resource($curl)) {
                 throw new RuntimeException('Could not initialize curl');
             }
 

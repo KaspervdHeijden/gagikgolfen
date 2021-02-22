@@ -1,4 +1,8 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+
+if command -v git >/dev/null; then
+    git pull origin master;
+fi
 
 if ! command -v php >/dev/null; then
     echo 'Require php' >&2;
@@ -6,7 +10,7 @@ if ! command -v php >/dev/null; then
 fi;
 
 if [ "$(php -v | head -n1 | grep -o "PHP [0-9]\+" | cut -c5-)" -lt 7 ]; then
-    echo 'PHP 7 or higher required' >&2;
+    echo 'Require PHP 7 or higher' >&2;
     exit 2;
 fi
 
@@ -19,7 +23,7 @@ if [ -z "${login}" ]; then
     fi
 fi
 
-read -p 'Password: ' passwd;
+read -sp 'Password: ' passwd;
 if [ -z "${passwd}" ]; then
     echo 'Password not set' >&2;
     exit 4;
@@ -27,47 +31,38 @@ else
     passwd=$(echo "${passwd}" | base64);
 fi
 
-interval="${2:-600}";
-course="${3:-64}";
-cache=gig.cache;
-lastSat='';
-lastSun='';
+declare -A outputs;
+cache_file="$(pwd)/gig.cache";
+interval="${3:-600}";
+course="${2:-64}";
 
 while true; do
-    newSat=$(./gaikgolfen.php --login="${login}" --passwd="${passwd}" --date='saturday' --display=table --course="${course}" --cache="${cache}");
-    if [ $? = 10 ]; then
-        echo 'Could not login' >&2;
-        exit 4;
-    fi
+    while read -r dateEntry; do
+        if [ -z "${dateEntry}" ]; then
+            continue;
+        fi
 
-    newSun=$(./gaikgolfen.php -v --login="${login}" --passwd="${passwd}" --date='sunday' --display=table --course="${course}" --cache="${cache}");
-    url=$(echo "${newSun}" | head -n1);
-    newSun=$(echo "${newSun}" | tail -n +2);
+        new_output=$(./gaikgolfen.php -v --login="${login}" --passwd="${passwd}" --date="next ${dateEntry}" --display=table --course="${course}" --cache="${cache_file}");
+        url=$(echo "${new_output}" | head -n1);
+        new=$(echo "${new_output}" | tail -n +2);
 
-    if [ "${newSat}" != "${lastSat}" ] || [ "${newSun}" != "${lastSun}" ]; then
-        [ -x "$(command -v notify-send)" ] && notify-send -i "$(pwd)/gig.png" -t 3000 'Gaikgolfen' 'Command output changed';
-        sleep 1;
-        [ -x "$(command -v firefox)" ] && firefox --new-tab "${url}";
-    fi
+        if [ "${outputs[$dateEntry]}" != "${new_output}" ]; then
+            outputs[$dateEntry]="{new_output}";
 
-    lastSat="${newSat}";
-    lastSun="${newSun}";
+            [ -x "$(command -v termux-notification)" ] && termux-notification -t 'Gaikgolfen?' -c 'Command output changed' --image-path "$(pwd)/gig.png" --vibrate 200,20,20 --action "sh -c 'termux-open-url $url'";
+            [ -x "$(command -v notify-send)" ] && notify-send -i "$(pwd)/gig.png" -t 3000 'Gaikgolfen?' 'Command output changed';
 
-    date;
-    echo '';
-    echo 'ZATERDAG';
-    echo '========';
-    echo "${newSat}";
-
-    echo '';
-    echo 'ZONDAG';
-    echo '======';
-    echo "${newSun}";
-    echo '';
+            date +'%A %B %d %T';
+            echo "${dateEntry}";
+            echo '========';
+            echo "${new_output}";
+            echo '';
+        fi
+    done < ./dates.txt;
 
     sleep "${interval}";
 done;
 
-if [ -f "${cache}" ]; then
-    rm "${cache}";
+if [ -f "${cache_file}" ]; then
+    rm "${cache_file}";
 fi
