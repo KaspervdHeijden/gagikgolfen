@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if command -v git >/dev/null; then
-    git pull origin master;
+    git pull --quiet origin master;
 fi
 
 if ! command -v php >/dev/null; then
@@ -37,6 +37,8 @@ interval="${3:-600}";
 course="${2:-64}";
 
 while true; do
+    did_notify=0;
+
     while read -r dateEntry; do
         if [ -z "${dateEntry}" ]; then
             continue;
@@ -44,17 +46,30 @@ while true; do
 
         new_output=$(./gaikgolfen.php -v --login="${login}" --passwd="${passwd}" --date="next ${dateEntry}" --display=table --course="${course}" --cache="${cache_file}");
         url=$(echo "${new_output}" | head -n1);
-        new=$(echo "${new_output}" | tail -n +2);
+        new_output=$(echo "${new_output}" | tail -n +2);
 
         if [ "${outputs[$dateEntry]}" != "${new_output}" ]; then
-            outputs[$dateEntry]="{new_output}";
+            outputs[$dateEntry]="${new_output}";
 
-            [ -x "$(command -v termux-notification)" ] && termux-notification -t 'Gaikgolfen?' -c 'Command output changed' --image-path "$(pwd)/gig.png" --vibrate 200,20,20 --action "sh -c 'termux-open-url $url'";
-            [ -x "$(command -v notify-send)" ] && notify-send -i "$(pwd)/gig.png" -t 3000 'Gaikgolfen?' 'Command output changed';
+            if [ "${did_notify}" -eq 0 ]; then
+                if [ -x "$(command -v termux-notification)" ]; then
+                    termux-notification --title 'Gaikgolfen?' \
+                                        --ccontent 'Command output changed' \
+                                        --image-path "$(pwd)/gig.png" \
+                                        --vibrate 200,20,20 \
+                                        --action "termux-open-url '${url}'";
+                fi
+
+                if [ -x "$(command -v notify-send)" ]; then
+                    notify-send -i "$(pwd)/gig.png" -t 3000 'Gaikgolfen?' 'Command output changed';
+                fi
+
+                did_notify=1;
+            fi
 
             date +'%A %B %d %T';
             echo "${dateEntry}";
-            echo '========';
+            echo $(echo "${dateEntry}" | sed 's/./=/g');
             echo "${new_output}";
             echo '';
         fi
