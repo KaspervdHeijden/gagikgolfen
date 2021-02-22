@@ -37,6 +37,7 @@ interval="${3:-600}";
 course="${2:-64}";
 
 while true; do
+    date +'Last run: %A %B %d %T';
     did_notify=0;
 
     while read -r dateEntry; do
@@ -67,7 +68,6 @@ while true; do
                 did_notify=1;
             fi
 
-            date +'%A %B %d %T';
             echo "${dateEntry}";
             echo $(echo "${dateEntry}" | sed 's/./=/g');
             echo "${new_output}";
