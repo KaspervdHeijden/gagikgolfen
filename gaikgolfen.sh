@@ -54,7 +54,7 @@ while true; do
             if [ "${did_notify}" -eq 0 ]; then
                 if [ -x "$(command -v termux-notification)" ]; then
                     termux-notification --title 'Gaikgolfen?' \
-                                        --ccontent 'Command output changed' \
+                                        --content 'Command output changed' \
                                         --image-path "$(pwd)/gig.png" \
                                         --vibrate 200,20,20 \
                                         --action "termux-open-url '${url}'";
