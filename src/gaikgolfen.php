@@ -31,6 +31,7 @@ use function fputcsv;
 use function fwrite;
 use function get_class;
 use function getopt;
+use function in_array;
 use function is_array;
 use function is_file;
 use function is_readable;
@@ -51,11 +52,11 @@ use function trim;
 {
     private const TEE_TIMES_URL          = 'https://www.ikgagolfen.nl/asparagi/ikgagolfen/site2/teetimes/teetimes.asp?sid=%s&q=%s';
     private const DOMAIN_NAME            = 'https://www.ikgagolfen.nl/';
+    private const AVAILABLE_CLASSNAMES   = ['tt_av', 'tt_avh'];
     private const COLUMN_TITLE_ID_FORMAT = 'crltitle%d';
     private const DATE_FORMAT            = 'd/m/Y';
     private const POST_FIELDS_FORMAT     = '_name=%s&_ww=%s';
     private const FORM_LOGIN_NAME        = 'login';
-    private const AVAILABLE_CLASSNAME    = 'tt_av';
     private const COLUMN_ID_FORMAT       = 'ts%d';
 
     private const USER_AGENT             = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:85.0) Gecko/20100101 Firefox/85.0';
@@ -326,7 +327,7 @@ use function trim;
 
         $tds = $column->getElementsByTagName('td');
         foreach ($tds as $td) {
-            if ((string)$td->getAttribute('class') !== self::AVAILABLE_CLASSNAME) {
+            if (! in_array((string)$td->getAttribute('class'), self::AVAILABLE_CLASSNAMES)) {
                 continue;
             }
 
