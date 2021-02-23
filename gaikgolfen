@@ -28,7 +28,7 @@ while getopts 'l:c:i:n:' arg; do
     esac
 done
 
-find "${credentials_file}" -mtime +3 --delete
+find "${credentials_file}" -mtime +3 -print0 | xargs -0 rm;
 if [ -f "${credentials_file}" ]; then
     if [ -n "${login}" ]; then
         passwd=$($grep "${login}:" "${credentials_file}" | cut -d':' -f2-);
@@ -50,6 +50,7 @@ fi
 
 if [ -z "${passwd}" ]; then
     read -sp 'Password: ' passwd;
+    echo '';
     if [ -z "${passwd}" ]; then
         echo 'Password not set' >&2;
         exit 4;
@@ -96,7 +97,7 @@ while true; do
             echo "${output}";
             echo '';
         fi
-    done < "$pwd)/dates.txt";
+    done < "$(pwd)/dates.txt";
 
     sleep "${interval}";
 done;
