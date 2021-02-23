@@ -21,10 +21,10 @@ course=64;
 
 while getopts 'l:c:i:n:' arg; do
     case "${arg}" in
-        'l': login="${OPTARG}"    ;;
-        'c': course="${OPTARG}"   ;;
-        'i': interval="${OPTARG}" ;;
-        'n': columns="${OPTARG}"  ;;
+        'l') login="${OPTARG}"    ;;
+        'c') course="${OPTARG}"   ;;
+        'i') interval="${OPTARG}" ;;
+        'n') columns="${OPTARG}"  ;;
     esac
 done
 
