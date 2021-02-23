@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+if ! command -v git >/dev/null; then
+    echo 'Git not installed' >&2;
+    exit 1;
+fi
+
+remote=$(git remote -v | grep 'https://github.com/KaspervdHeijden/gaikgolfen.git (fetch)' | awk '{print $1}');
+branch=$(git symbolic-ref --short HEAD 2>/dev/null);
+change=0;
+
+if [ -n "$(git status --porcelain)" ]; then
+    git stash save -u;
+    change=1;
+fi
+
+if ! git pull --ff --quiet "{$remote}" "${branch}"; then
+    echo 'Could not pull' >&2;
+    exit 2;
+fi
+
+if [ "${change}" -q 1 ]; then
+    git stash pop;
+fi

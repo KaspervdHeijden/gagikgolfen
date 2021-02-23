@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-if command -v git >/dev/null; then
-    git pull --quiet origin master;
-fi
-
 if ! command -v php >/dev/null; then
     echo 'Require php' >&2;
     exit 1;
@@ -13,6 +9,8 @@ if [ "$(php -v | head -n1 | grep -o "PHP [0-9]\+" | cut -c5-)" -lt 7 ]; then
     echo 'Require PHP 7 or higher' >&2;
     exit 2;
 fi
+
+./update;
 
 declare -A outputs;
 credentials_file="$(pwd)/cache/credentials";
