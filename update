@@ -7,11 +7,11 @@ fi
 
 remote=$(git remote -v | grep 'https://github.com/KaspervdHeijden/gaikgolfen.git (fetch)' | awk '{print $1}');
 branch=$(git symbolic-ref --short HEAD 2>/dev/null);
-quiet='--quiet';
 changes=0;
+quiet='';
 
 if [ "${1}" == '-q' ]; then
-    quiet='';
+    quiet='--quiet';
 fi
 
 if [ -n "$(git status --porcelain)" ]; then
