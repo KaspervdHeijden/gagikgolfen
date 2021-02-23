@@ -28,10 +28,10 @@ while getopts 'l:c:i:n:' arg; do
     esac
 done
 
-find "${credentials_file}" -mtime +3 -print0 | xargs -0 rm;
+find "${credentials_file}" -mtime +3 -exec rm {} \;
 if [ -f "${credentials_file}" ]; then
     if [ -n "${login}" ]; then
-        passwd=$($grep "${login}:" "${credentials_file}" | cut -d':' -f2-);
+        passwd=$(grep "${login}:" "${credentials_file}" | cut -d':' -f2-);
     else
         while read -r line; do
             passwd=$(echo "${line}" | cut -d':' -f2-);
