@@ -24,6 +24,6 @@ if ! git pull --ff ${quiet} "${remote}" "${branch}"; then
     exit 2;
 fi
 
-if [ "${changes}" -q 1 ]; then
+if [ "${changes}" -eq 1 ]; then
     git stash pop;
 fi
