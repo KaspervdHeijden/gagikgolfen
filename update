@@ -5,7 +5,6 @@ if ! command -v git >/dev/null; then
     exit 1;
 fi
 
-
 cd $(dirname "${0}");
 remote=$(git remote -v | grep 'https://github.com/KaspervdHeijden/gaikgolfen.git (fetch)' | awk '{print $1}');
 branch=$(git symbolic-ref --short HEAD 2>/dev/null);
