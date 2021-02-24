@@ -10,10 +10,10 @@ if [ "$(php -v | head -n1 | grep -o "PHP [0-9]\+" | cut -c5-)" -lt 7 ]; then
     exit 2;
 fi
 
-./update -q;
+root_dir=$(dirname "${0}");
+(cd "${root_dir}" && ./update -q);
 
 declare -A outputs;
-root_dir=$(dirname "${0}");
 credentials_file="${root_dir}/cache/credentials";
 cache_file="${root_dir}/cache/session";
 use_credentials_cache=1;
@@ -86,7 +86,7 @@ while true; do
             continue;
         fi
 
-        new_output=$(${root_dir}/src/gaikgolfen.php -v --login="${login}" --passwd="${passwd}" --date="${dateEntry}" --columns="${columns}" --display=table --course="${course}" --cache="${cache_file}");
+        new_output=$("${root_dir}/src/gaikgolfen.php" -v --login="${login}" --passwd="${passwd}" --date="${dateEntry}" --columns="${columns}" --display=table --course="${course}" --cache="${cache_file}");
         url=$(echo "${new_output}" | head -n1);
         output=$(echo "${new_output}" | tail -n +2);
 
