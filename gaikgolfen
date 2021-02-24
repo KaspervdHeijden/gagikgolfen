@@ -13,30 +13,35 @@ fi
 ./update -q;
 
 declare -A outputs;
-credentials_file="$(pwd)/cache/credentials";
-cache_file="$(pwd)/cache/session";
+root_dir=$(dirname "${0}");
+credentials_file="${root_dir}/cache/credentials";
+cache_file="${root_dir}/cache/session";
+use_credentials_cache=1;
 interval=600;
 columns=4;
 course=64;
 
 while getopts 'l:c:i:n:' arg; do
     case "${arg}" in
-        'l') login="${OPTARG}"    ;;
-        'c') course="${OPTARG}"   ;;
-        'i') interval="${OPTARG}" ;;
-        'n') columns="${OPTARG}"  ;;
+        's') use_credentials_cache=0 ;;
+        'i') interval="${OPTARG}"    ;;
+        'n') columns="${OPTARG}"     ;;
+        'c') course="${OPTARG}"      ;;
+        'l') login="${OPTARG}"       ;;
     esac
 done
 
 find "${credentials_file}" -mtime +3 -exec rm {} \;
-if [ -f "${credentials_file}" ]; then
-    if [ -n "${login}" ]; then
-        passwd=$(grep "${login}:" "${credentials_file}" | cut -d':' -f2-);
-    else
-        while read -r line; do
-            passwd=$(echo "${line}" | cut -d':' -f2-);
-            login=$(echo "${line}" | cut -d':' -f1);
-        done < "${credentials_file}";
+if [ "${use_credentials_cache}" -eq 1 ]; then
+    if [ -f "${credentials_file}" ]; then
+        if [ -n "${login}" ]; then
+            passwd=$(grep "${login}:" "${credentials_file}" | cut -d':' -f2-);
+        else
+            while read -r line; do
+                passwd=$(echo "${line}" | cut -d':' -f2-);
+                login=$(echo "${line}" | cut -d':' -f1);
+            done < "${credentials_file}";
+        fi
     fi
 fi
 
@@ -51,6 +56,7 @@ fi
 if [ -z "${passwd}" ]; then
     read -sp 'Password: ' passwd;
     echo '';
+
     if [ -z "${passwd}" ]; then
         echo 'Password not set' >&2;
         exit 4;
@@ -59,7 +65,14 @@ if [ -z "${passwd}" ]; then
     passwd=$(echo "${passwd}" | base64);
 fi
 
-echo "${login}:${passwd}" > "${credentials_file}";
+if [ "${use_credentials_cache}" -eq 1 ]; then
+    echo "${login}:${passwd}" > "${credentials_file}";
+fi
+
+if [ "${interval}" -lt 60 ]; then
+    interval=120;
+fi
+
 while true; do
     date +'Last run: %A %B %d %T';
     did_notify=0;
@@ -69,7 +82,11 @@ while true; do
             continue;
         fi
 
-        new_output=$(./src/gaikgolfen.php -v --login="${login}" --passwd="${passwd}" --date="next ${dateEntry}" --columns="${columns}" --display=table --course="${course}" --cache="${cache_file}");
+        if echo "${dateEntry}" | grep -q '#[ ]*#'; then
+            continue;
+        fi
+
+        new_output=$(${root_dir}/src/gaikgolfen.php -v --login="${login}" --passwd="${passwd}" --date="${dateEntry}" --columns="${columns}" --display=table --course="${course}" --cache="${cache_file}");
         url=$(echo "${new_output}" | head -n1);
         output=$(echo "${new_output}" | tail -n +2);
 
@@ -82,13 +99,13 @@ while true; do
                 if [ -x "$(command -v termux-notification)" ]; then
                     termux-notification --title 'Gaikgolfen?' \
                                         --content 'Tee times changed' \
-                                        --image-path "$(pwd)/img/gig.png" \
+                                        --image-path "${root_dir}/img/gig.png" \
                                         --vibrate 200,20,20 \
                                         --action "termux-open-url '${url}'";
                 fi
 
                 if [ -x "$(command -v notify-send)" ]; then
-                    notify-send -i "$(pwd)/img/gig.png" -t 3000 'Gaikgolfen?' 'Tee times changed';
+                    notify-send -i "${root_dir}/img/gig.png" -t 3000 'Gaikgolfen?' 'Tee times changed';
                 fi
             fi
 
@@ -97,7 +114,7 @@ while true; do
             echo "${output}";
             echo '';
         fi
-    done < "$(pwd)/dates.txt";
+    done < "${root_dir}/dates.txt";
 
     sleep "${interval}";
 done;
