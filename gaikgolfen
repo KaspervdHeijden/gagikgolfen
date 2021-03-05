@@ -31,7 +31,7 @@ while getopts 'l:c:i:n:' arg; do
     esac
 done
 
-find "${credentials_file}" -mtime +3 -exec rm {} \;
+find "${credentials_file}" -mtime +3 -exec rm {} \; 2>/dev//null;
 if [ "${use_credentials_cache}" -eq 1 ]; then
     if [ -f "${credentials_file}" ]; then
         if [ -n "${login}" ]; then
