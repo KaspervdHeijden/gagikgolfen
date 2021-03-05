@@ -5,7 +5,6 @@ declare(strict_types=1);
 
 namespace KasH\GaIkGolfen;
 
-use CurlHandle;
 use DateTimeImmutable;
 use DOMDocument;
 use DOMElement;
@@ -35,22 +34,22 @@ use function in_array;
 use function is_array;
 use function is_file;
 use function is_readable;
-use function is_resource;
 use function is_string;
-use function json_decode;
-use function json_encode;
 use function libxml_use_internal_errors;
 use function ltrim;
-use function preg_match;
+use function parse_url;
 use function sprintf;
 use function str_repeat;
 use function strlen;
 use function strpos;
 use function trim;
 
-(new class(getopt('v', ['login:', 'passwd:', 'columns::', 'date::', 'cache::', 'display::', 'course::']))
+use const PHP_URL_QUERY;
+
+(new class (getopt('v', ['login:', 'passwd:', 'columns::', 'date::', 'cache::', 'display::', 'course::']))
 {
-    private const TEE_TIMES_URL          = 'https://www.ikgagolfen.nl/asparagi/ikgagolfen/site2/teetimes/teetimes.asp?sid=%s&q=%s';
+    private const TEE_TIMES_URL          = 'https://www.ikgagolfen.nl/asparagi/ikgagolfen/site2/teetimes/teetimes.asp?%s';
+    private const LOGIN_FAILED_NEEDLE    = 'Achternaam of wachtwoord is onjuist';
     private const DOMAIN_NAME            = 'https://www.ikgagolfen.nl/';
     private const AVAILABLE_CLASSNAMES   = ['tt_av', 'tt_avh'];
     private const COLUMN_TITLE_ID_FORMAT = 'crltitle%d';
@@ -112,13 +111,13 @@ use function trim;
         }
 
         $this->config = [
-            'display' => $arguments['display'] ?? self::DEFAULT_DISPLAY,
+            'display' => (string)($arguments['display'] ?? self::DEFAULT_DISPLAY),
             'course'  => (string)($arguments['course'] ?? ''),
-            'date'    => $date->format(self::DATE_FORMAT),
-            'cache'   => $arguments['cache'] ?? '',
-            'verbose' => isset($arguments['v']),
-            'login'   => $arguments['login'],
-            'passwd'  => $passwdDecoded,
+            'date'    => (string)$date->format(self::DATE_FORMAT),
+            'cache'   => (string)($arguments['cache'] ?? ''),
+            'verbose' => (bool)isset($arguments['v']),
+            'login'   => (string)$arguments['login'],
+            'passwd'  => (string)$passwdDecoded,
             'columns' => $columns,
         ];
 
@@ -129,7 +128,7 @@ use function trim;
     {
         try {
             $curl = curl_init($url);
-            if (! $curl instanceof CurlHandle && ! is_resource($curl)) {
+            if (! $curl) {
                 throw new RuntimeException('Could not initialize curl');
             }
 
@@ -162,7 +161,7 @@ use function trim;
 
             return $response;
         } finally {
-            if (is_resource($curl)) {
+            if ($curl) {
                 curl_close($curl);
             }
         }
@@ -221,10 +220,10 @@ use function trim;
         return $document->getElementById(sprintf(self::COLUMN_ID_FORMAT, $columnIndex));
     }
 
-    private function getSessionFromCache(string $cache): ?array
+    private function getSessionFromCache(string $cache): string
     {
         if ($cache === '' || ! is_file($cache) || ! is_readable($cache)) {
-            return null;
+            return '';
         }
 
         $content = file_get_contents($cache);
@@ -232,48 +231,39 @@ use function trim;
             throw new RuntimeException("Cannot read contents from cache file '{$cache}'");
         }
 
-        $data = json_decode($content, true);
-        if (! isset($data['sid'], $data['q'])) {
-            throw new UnexpectedValueException("Invalid data structure found in cache file '{$cache}'");
-        }
-
-        return $data;
+        return $content;
     }
 
-    /** @noinspection PhpArrayShapeAttributeCanBeAddedInspection */
-    private function login(array $config, string $cache): array
+    /** @noinspection PhpPureAttributeCanBeAddedInspection */
+    private function wasLoginSuccesful(string $html): bool
+    {
+        if (str_contains($html, self::LOGIN_FAILED_NEEDLE)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function login(array $config, string $cache): string
     {
         $postFields = sprintf(self::POST_FIELDS_FORMAT, $config['login'], $config['passwd']);
         $loginUrl   = $this->getLoginTargetUrl(self::DOMAIN_NAME);
-        $document   = $this->downloadPage($loginUrl, $postFields);
+        $html       = $this->curlAction($loginUrl, $postFields);
 
-        // This currently does not work
-        if (0 && $this->getLoginForm($document) instanceof DOMElement) {
+        if (! $this->wasLoginSuccesful($html)) {
             throw new RuntimeException('Could not login', 10);
         }
 
-        $matches = [];
-        if (! (bool)preg_match('/\?sid=(\d+)&q=(\d+)+/', $loginUrl, $matches)) {
+        $query = (string)parse_url($loginUrl, PHP_URL_QUERY);
+        if ($query === '') {
             throw new LogicException('Could not extract session variables: url format mismatch');
         }
 
-        if (! isset($matches[1], $matches[2])) {
-            throw new UnexpectedValueException('Could not extract session variables: variables not set');
+        if ($cache !== '' && ! file_put_contents($cache, $query)) {
+            throw new RuntimeException("Could not write to cache file '{$cache}'");
         }
 
-        $session = [
-            'sid' => (string)$matches[1],
-            'q'   => (string)$matches[2],
-        ];
-
-        if ($cache !== '') {
-            $writtten = (bool)file_put_contents($cache, (string)json_encode($session));
-            if (! $writtten) {
-                throw new RuntimeException("Could not write to cache file '{$cache}'");
-            }
-        }
-
-        return $session;
+        return $query;
     }
 
     private function println(string $string = '', bool $toErr = false): void
@@ -336,11 +326,11 @@ use function trim;
     }
 
     private function downloadTeeTimesDocument(
-        array $session,
+        string $sessionId,
         string $postData,
         bool $verbose
     ): ?DOMDocument {
-        $url      = sprintf(self::TEE_TIMES_URL, $session['sid'], $session['q']);
+        $url      = sprintf(self::TEE_TIMES_URL, $sessionId);
         $document = $this->downloadPage($url, $postData);
         $column   = $this->getColumn($document, 0);
 
@@ -360,16 +350,17 @@ use function trim;
         array $config,
         bool $verbose
     ): DOMDocument {
-        $session = $this->getSessionFromCache($config['cache']);
-        if (is_array($session)) {
-            $document = $this->downloadTeeTimesDocument($session, $postData, $verbose);
+        $sessionId = $this->getSessionFromCache($config['cache']);
+        if ($sessionId !== '') {
+            $document = $this->downloadTeeTimesDocument($sessionId, $postData, $verbose);
             if ($document instanceof DOMDocument) {
                 return $document;
             }
         }
 
-        $session  = $this->login($config, $config['cache']);
-        $document = $this->downloadTeeTimesDocument($session, $postData, $verbose);
+        $sessionId = $this->login($config, $config['cache']);
+        $document  = $this->downloadTeeTimesDocument($sessionId, $postData, $verbose);
+
         if (! $document instanceof DOMDocument) {
             throw new LogicException('Could not load teetimes page');
         }
