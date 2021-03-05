@@ -87,6 +87,14 @@ while true; do
         fi
 
         new_output=$("${root_dir}/src/gaikgolfen.php" -v --login="${login}" --passwd="${passwd}" --date="${dateEntry}" --columns="${columns}" --display=table --course="${course}" --cache="${cache_file}");
+        if [ $? -eq 10 ]; then
+            if [ -f "${credentials_file}" ]; then
+                rm "${credentials_file}";
+            fi
+
+            break;
+        fi
+
         url=$(echo "${new_output}" | head -n1);
         output=$(echo "${new_output}" | tail -n +2);
 

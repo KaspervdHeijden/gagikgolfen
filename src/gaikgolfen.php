@@ -246,9 +246,9 @@ use const PHP_URL_QUERY;
 
     private function login(array $config, string $cache): string
     {
-        $postFields = sprintf(self::POST_FIELDS_FORMAT, $config['login'], $config['passwd']);
-        $loginUrl   = $this->getLoginTargetUrl(self::DOMAIN_NAME);
-        $html       = $this->curlAction($loginUrl, $postFields);
+        $post     = sprintf(self::POST_FIELDS_FORMAT, $config['login'], $config['passwd']);
+        $loginUrl = $this->getLoginTargetUrl(self::DOMAIN_NAME);
+        $html     = $this->curlAction($loginUrl, $post);
 
         if (! $this->wasLoginSuccesful($html)) {
             throw new RuntimeException('Could not login', 10);
@@ -256,10 +256,10 @@ use const PHP_URL_QUERY;
 
         $query = (string)parse_url($loginUrl, PHP_URL_QUERY);
         if ($query === '') {
-            throw new LogicException('Could not extract session variables: url format mismatch');
+            throw new LogicException('Could not extract session variables');
         }
 
-        if ($cache !== '' && ! file_put_contents($cache, $query)) {
+        if ($cache !== '' && ! (bool)file_put_contents($cache, $query)) {
             throw new RuntimeException("Could not write to cache file '{$cache}'");
         }
 
