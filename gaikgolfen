@@ -92,7 +92,7 @@ while true; do
                 rm "${credentials_file}";
             fi
 
-            break;
+            exit 10;
         fi
 
         url=$(echo "${new_output}" | head -n1);
