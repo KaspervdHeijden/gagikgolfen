@@ -21,13 +21,16 @@ interval=600;
 columns=4;
 course=64;
 
-while getopts 'l:c:i:n:' arg; do
+while getopts 'l:c:i:n:s' arg; do
     case "${arg}" in
         's') use_credentials_cache=0 ;;
         'i') interval="${OPTARG}"    ;;
         'n') columns="${OPTARG}"     ;;
         'c') course="${OPTARG}"      ;;
         'l') login="${OPTARG}"       ;;
+        *)
+             echo "Unrecognized option ${arg}" >&2
+             ;;
     esac
 done
 
@@ -46,7 +49,7 @@ if [ "${use_credentials_cache}" -eq 1 ]; then
 fi
 
 if [ -z "${login}" ]; then
-    read -p 'Login: ' login;
+    read -rp 'Login: ' login;
     if [ -z "${login}" ]; then
         echo 'Login not set' >&2;
         exit 3;
@@ -54,7 +57,7 @@ if [ -z "${login}" ]; then
 fi
 
 if [ -z "${passwd}" ]; then
-    read -sp 'Password: ' passwd;
+    read -srp 'Password: ' passwd;
     echo '';
 
     if [ -z "${passwd}" ]; then
@@ -118,7 +121,8 @@ while true; do
             fi
 
             echo "${dateEntry}";
-            echo $(echo "${dateEntry}" | sed 's/./=/g');
+            # shellcheck disable=SC2001
+            echo "${dateEntry}" | sed 's/./=/g';
             echo "${output}";
             echo '';
         fi

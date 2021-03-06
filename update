@@ -5,7 +5,7 @@ if ! command -v git >/dev/null; then
     exit 1;
 fi
 
-cd $(dirname "${0}");
+cd "$(dirname "${0}")" || exit 2;
 remote=$(git remote -v | grep 'https://github.com/KaspervdHeijden/gaikgolfen.git (fetch)' | awk '{print $1}');
 branch=$(git symbolic-ref --short HEAD 2>/dev/null);
 changes=0;
@@ -22,7 +22,7 @@ fi
 
 if ! git pull --ff ${quiet} "${remote}" "${branch}"; then
     echo 'Could not pull' >&2;
-    exit 2;
+    exit 3;
 fi
 
 if [ "${changes}" -eq 1 ]; then

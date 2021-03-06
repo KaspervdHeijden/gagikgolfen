@@ -234,10 +234,9 @@ use const PHP_URL_QUERY;
         return $content;
     }
 
-    /** @noinspection PhpPureAttributeCanBeAddedInspection */
-    private function wasLoginSuccesful(string $html): bool
+    private function wasLoginSuccessful(string $html): bool
     {
-        if (str_contains($html, self::LOGIN_FAILED_NEEDLE)) {
+        if (strpos($html, self::LOGIN_FAILED_NEEDLE) !== false) {
             return false;
         }
 
@@ -250,7 +249,7 @@ use const PHP_URL_QUERY;
         $loginUrl = $this->getLoginTargetUrl(self::DOMAIN_NAME);
         $html     = $this->curlAction($loginUrl, $post);
 
-        if (! $this->wasLoginSuccesful($html)) {
+        if (! $this->wasLoginSuccessful($html)) {
             throw new RuntimeException('Could not login', 10);
         }
 
