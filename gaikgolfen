@@ -78,8 +78,8 @@ fi
 
 while true; do
     date +'Last run: %A %B %d %T';
-    did_notify=0;
 
+    did_notify=0;
     while read -r dateEntry; do
         if [ -z "${dateEntry}" ]; then
             continue;
@@ -89,7 +89,12 @@ while true; do
             continue;
         fi
 
-        new_output=$("${root_dir}/src/gaikgolfen.php" -v --login="${login}" --passwd="${passwd}" --date="${dateEntry}" --columns="${columns}" --display=table --course="${course}" --cache="${cache_file}");
+        new_output=$("${root_dir}/src/gaikgolfen.php" -v \
+                        --login="${login}" --passwd="${passwd}" \
+                         --date="${dateEntry}" --columns="${columns}" \
+                         --display=table --course="${course}" \
+                         --cache="${cache_file}");
+
         if [ $? -eq 10 ]; then
             if [ -f "${credentials_file}" ]; then
                 rm "${credentials_file}";
@@ -101,31 +106,32 @@ while true; do
         url=$(echo "${new_output}" | head -n1);
         output=$(echo "${new_output}" | tail -n +2);
 
-        if [ "${outputs[$dateEntry]}" != "${output}" ]; then
-            outputs[$dateEntry]="${output}";
-
-            if [ "${did_notify}" -eq 0 ]; then
-                did_notify=1;
-
-                if [ -x "$(command -v termux-notification)" ]; then
-                    termux-notification --title 'Gaikgolfen?' \
-                                        --content 'Tee times changed' \
-                                        --image-path "${root_dir}/img/gig.png" \
-                                        --vibrate 200,20,20 \
-                                        --action "termux-open-url '${url}'";
-                fi
-
-                if [ -x "$(command -v notify-send)" ]; then
-                    notify-send -i "${root_dir}/img/gig.png" -t 3000 'Gaikgolfen?' 'Tee times changed';
-                fi
-            fi
-
-            echo "${dateEntry}";
-            # shellcheck disable=SC2001
-            echo "${dateEntry}" | sed 's/./=/g';
-            echo "${output}";
-            echo '';
+        if [ "${outputs[$dateEntry]}" == "${output}" ]; then
+            continue;
         fi
+
+        outputs[$dateEntry]="${output}";
+        echo "${dateEntry}";
+        echo "${dateEntry}" | sed 's/./=/g';
+        echo "${output}";
+        echo '';
+
+        if [ "${did_notify}" -eq 1 ]; then
+            continue;
+        fi
+
+        if [ -x "$(command -v termux-notification)" ]; then
+            termux-notification --title 'Gaikgolfen?' \
+                                --content 'Tee times changed' \
+                                --image-path "${root_dir}/img/gig.png" \
+                                --vibrate 200,20,20 \
+                                --action "termux-open-url '${url}'";
+        elif [ -x "$(command -v notify-send)" ]; then
+            notify-send -i "${root_dir}/img/gig.png" \
+                        -t 3000 'Gaikgolfen?' 'Tee times changed';
+        fi
+
+        did_notify=1;
     done < "${root_dir}/dates.txt";
 
     sleep "${interval}";
