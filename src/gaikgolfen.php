@@ -297,7 +297,7 @@ use const PHP_URL_QUERY;
         }
     }
 
-    private function displayAvailableTimesForColumn(
+    private function displayAvailableFlightsForColumn(
         DOMDocument $document,
         int $columnIndex,
         string $display
@@ -367,7 +367,7 @@ use const PHP_URL_QUERY;
         return $document;
     }
 
-    private function displayAvailableTimes(array $config): void
+    private function displayAvailableFlights(array $config): void
     {
         $postData = "playdate={$config['date']}";
         if ($config['course'] !== '') {
@@ -376,7 +376,7 @@ use const PHP_URL_QUERY;
 
         $document = $this->getTeetimesDocument($postData, $config, $config['verbose']);
         for ($column = 0; $column < $config['columns']; ++$column) {
-            $this->displayAvailableTimesForColumn($document, $column, $config['display']);
+            $this->displayAvailableFlightsForColumn($document, $column, $config['display']);
         }
     }
 
@@ -418,7 +418,7 @@ use const PHP_URL_QUERY;
     public function run(): void
     {
         try {
-            $this->displayAvailableTimes($this->config);
+            $this->displayAvailableFlights($this->config);
         } catch (Throwable $exception) {
             $this->showHelp($exception);
             exit($exception->getCode() ?: self::ERROR_RESULT);
