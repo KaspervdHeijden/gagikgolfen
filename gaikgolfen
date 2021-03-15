@@ -82,7 +82,6 @@ if [ "${interval}" -lt 60 ]; then
     interval=60;
 fi
 
-iteration=0;
 while true; do
     date +'Last run: %A %B %d %T';
 
@@ -131,13 +130,12 @@ while true; do
         fi
 
         if [ -x "$(command -v termux-notification)" ]; then
-            iteration=$((iteration + 1));
-
+            hash=$(date +'%s');
             termux-notification --title 'Gaikgolfen?' \
                                 --content 'Tee times changed' \
                                 --image-path "${root_dir}/img/gig.png" \
                                 --vibrate 200,20,20 \
-                                --action "termux-open-url '${url}#iter{$iteration}'";
+                                --action "termux-open-url '${url}#$(date +'%s')'";
         elif [ -x "$(command -v notify-send)" ]; then
             notify-send -i "${root_dir}/img/gig.png" \
                         -t 3000 'Gaikgolfen?' 'Tee times changed';
