@@ -1,9 +1,11 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-if ! command -v git >/dev/null; then
-    echo 'Git not installed' >&2;
-    exit 1;
-fi
+for binary in git awk sed dirname; do
+    if ! command -v "${binary}" >/dev/null; then
+        echo "Require ${binary}" >&2;
+        exit 1;
+    fi
+done;
 
 cd "$(dirname "${0}")" || exit 2;
 remote=$(git remote -v | grep 'https://github.com/KaspervdHeijden/gaikgolfen.git (fetch)' | awk '{print $1}');
@@ -11,13 +13,12 @@ branch=$(git symbolic-ref --short HEAD 2>/dev/null);
 changes=0;
 quiet='';
 
-if [ "${1}" == '-q' ]; then
+if [ "${1}" = '-q' ]; then
     quiet='--quiet';
 fi
 
 if [ -n "$(git status --porcelain)" ]; then
-    git stash save -u;
-    changes=1;
+    git stash save -u && changes=1;
 fi
 
 if ! git pull --ff ${quiet} "${remote}" "${branch}"; then

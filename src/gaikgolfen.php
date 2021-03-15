@@ -92,7 +92,7 @@ use const PHP_URL_QUERY;
 
         $columns = (int)($arguments['columns'] ?? self::DEFAULT_COLUMNS);
         if ($columns < 1) {
-            throw new InvalidArgumentException("Invalid number of columns: {$columns}.");
+            throw new InvalidArgumentException("Invalid number of columns: {$columns}");
         }
 
         $dateString = (string)($arguments['date'] ?? self::DEFAULT_DATE);
@@ -380,10 +380,10 @@ use const PHP_URL_QUERY;
         }
     }
 
-    private function showHelp(?Throwable $exception): void
+    private function showHelp(Throwable $throwable): void
     {
-        if ($exception instanceof Throwable && $exception->getMessage() !== '') {
-            $this->println(sprintf('%s: %s', get_class($exception), $exception->getMessage()), true);
+        if ($throwable->getMessage() !== '') {
+            $this->println(sprintf('%s: %s', get_class($throwable), $throwable->getMessage()), true);
             $this->println('', true);
         }
 
@@ -419,9 +419,9 @@ use const PHP_URL_QUERY;
     {
         try {
             $this->displayAvailableFlights($this->config);
-        } catch (Throwable $exception) {
-            $this->showHelp($exception);
-            exit($exception->getCode() ?: self::ERROR_RESULT);
+        } catch (Throwable $throwable) {
+            $this->showHelp($throwable);
+            exit($throwable->getCode() ?: self::ERROR_RESULT);
         }
     }
 })->run();

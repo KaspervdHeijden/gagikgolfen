@@ -1,9 +1,11 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-if ! command -v php >/dev/null; then
-    echo 'Require php' >&2;
-    exit 1;
-fi;
+for binary in php sed stty dirname base64 sed; do
+    if ! command -v "${binary}" >/dev/null; then
+        echo "Require ${binary}" >&2;
+        exit 1;
+    fi
+done;
 
 if [ "$(php -v | head -n1 | grep -o "PHP [0-9]\+" | cut -c5-)" -lt 7 ]; then
     echo 'Require PHP 7 or higher' >&2;
@@ -13,7 +15,6 @@ fi
 root_dir=$(dirname "${0}");
 (cd "${root_dir}" && ./update -q);
 
-declare -A outputs;
 credentials_file="${root_dir}/cache/credentials";
 cache_file="${root_dir}/cache/session";
 use_credentials_cache=1;
@@ -34,7 +35,9 @@ while getopts 'l:c:i:n:s' arg; do
     esac
 done
 
+find "${root_dir}"/cache/*.output.cache -exec rm {} \; 2>/dev/null;
 find "${credentials_file}" -mtime +3 -exec rm {} \; 2>/dev/null;
+
 if [ "${use_credentials_cache}" -eq 1 ]; then
     if [ -f "${credentials_file}" ]; then
         if [ -n "${login}" ]; then
@@ -57,7 +60,10 @@ if [ -z "${login}" ]; then
 fi
 
 if [ -z "${passwd}" ]; then
-    read -srp 'Password: ' passwd;
+    printf 'Choose: ';
+    stty -echo;
+    IFS= read -r passwd;
+    stty echo;
     echo '';
 
     if [ -z "${passwd}" ]; then
@@ -90,7 +96,7 @@ while true; do
         fi
 
         new_output=$("${root_dir}/src/gaikgolfen.php" -v \
-                        --login="${login}" --passwd="${passwd}" \
+                         --login="${login}" --passwd="${passwd}" \
                          --date="${dateEntry}" --columns="${columns}" \
                          --display=table --course="${course}" \
                          --cache="${cache_file}");
@@ -106,14 +112,13 @@ while true; do
         url=$(echo "${new_output}" | head -n1);
         output=$(echo "${new_output}" | tail -n +2);
 
-        if [ "${outputs[$dateEntry]}" == "${output}" ]; then
+        if [ "$(cat "${root_dir}/cache/${dateEntry}.output.cache" 2>/dev/null)" = "${output}" ]; then
             continue;
         fi
 
-        outputs[$dateEntry]="${output}";
         echo "${dateEntry}";
         echo "${dateEntry}" | sed 's/./=/g';
-        echo "${output}";
+        echo "${output}" | tee "${root_dir}/cache/${dateEntry}.output.cache";
         echo '';
 
         if [ "${did_notify}" -eq 1 ]; then
